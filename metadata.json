@@ -1,0 +1,10 @@
+{
+  "name": "Jemmah: Private Personal Assistant",
+  "description": "A completely offline, secure personal assistant with local AI-like command parsing, task management, and file vaulting using IndexedDB.",
+  "requestFramePermissions": [
+    "notifications"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
