@@ -6,6 +6,7 @@ import { parseCommand } from './lib/CommandParser';
 
 export default function App() {
   const [currentView, setCurrentView] = useState('chat');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [messages, setMessages] = useState([{
     id: '1',
     text: "Jemmah system active.",
@@ -36,9 +37,12 @@ export default function App() {
   };
 
   return (
-    <div className="flex h-screen w-screen bg-[#050505] text-[#F5F0EB]">
-      <Sidebar isOpen={true} setIsOpen={() => {}} currentView={currentView} setCurrentView={setCurrentView} />
-      <main className="flex-1 overflow-hidden">
+    <div className="flex h-screen w-screen bg-white text-black overflow-hidden">
+      <div className={`${isSidebarOpen ? 'block' : 'hidden'} md:block w-64 border-r bg-gray-50`}>
+        <Sidebar isOpen={true} setIsOpen={setIsSidebarOpen} currentView={currentView} setCurrentView={(v) => { setCurrentView(v); setIsSidebarOpen(false); }} />
+      </div>
+      <main className="flex-1 h-full overflow-hidden relative">
+        <button className="md:hidden p-4" onClick={() => setIsSidebarOpen(!isSidebarOpen)}>☰</button>
         {currentView === 'chat' && <ChatInterface messages={messages} onSendMessage={handleSendMessage} />}
         {currentView === 'tasks' && <TaskManager />}
       </main>
