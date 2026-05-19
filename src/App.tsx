@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Sidebar from './components/Sidebar';
-import ChatInterface from './components/ChatInterface';
+import { ChatInterface } from './components/ChatInterface';
 import TaskManager from './components/TaskManager';
 import { parseCommand } from './lib/CommandParser';
 
@@ -51,7 +51,6 @@ function App() {
 
   return (
     <div className="flex h-screen w-screen bg-[#050505] overflow-hidden font-sans antialiased text-[#F5F0EB]">
-      {/* Dynamic Responsive Sidebar */}
       <Sidebar 
         isOpen={isSidebarOpen} 
         setIsOpen={setIsSidebarOpen} 
@@ -59,9 +58,7 @@ function App() {
         setCurrentView={setCurrentView} 
       />
 
-      {/* Main Panel Workspace */}
       <div className="flex-1 flex flex-col min-w-0 h-full relative">
-        {/* Top Floating Mobile Header */}
         <header className="h-14 md:hidden flex items-center px-4 bg-[#0d0d0d] border-b border-[#2a2a2a] justify-between w-full z-40">
           <button 
             onClick={() => setIsSidebarOpen(true)}
@@ -74,7 +71,6 @@ function App() {
           <div className="w-8" />
         </header>
 
-        {/* Dynamic Display Panels */}
         <main className="flex-1 overflow-y-auto relative w-full h-full">
           {currentView === 'chat' && (
             <ChatInterface messages={messages} onSendMessage={handleSendMessage} />
