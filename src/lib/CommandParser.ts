@@ -1,90 +1,95 @@
-import { addDays, parse, isValid, format } from 'date-fns';
-import { db, type Task } from './LocalDB';
+import { addMinutes, addHours, startOfTomorrow } from 'date-fns';
 
-export interface CommandResult {
-  action: 'message' | 'task' | 'reminder' | 'search' | 'note';
-  data?: any;
-  feedback: string;
+export interface ParsedCommand {
+  type: 'reminder' | 'task' | 'note' | 'search' | 'unknown';
+  payload: any;
+  confirmationMessage: string;
 }
 
-export async function parseCommand(text: string): Promise<CommandResult> {
-  const input = text.toLowerCase().trim();
+export function parseCommand(input: string): ParsedCommand {
+  const cleanInput = input.trim();
+  const lowerInput = cleanInput.toLowerCase();
 
-  // 1. Task Parser: "add task: [title] to [category]"
-  const taskRegex = /(?:add task|new task):\s*(.+?)(?:\s+to\s+(personal|work))?$/i;
-  const taskMatch = text.match(taskRegex);
-  if (taskMatch) {
-    const title = taskMatch[1].trim();
-    const category = (taskMatch[2]?.toLowerCase() || 'personal') as 'personal' | 'work';
+  if (lowerInput.startsWith('remind me to ') || lowerInput.startsWith('remind me ')) {
+    const prefixMatch = cleanInput.match(/^remind me (?:to )?/i);
+    const textToParse = cleanInput.substring(prefixMatch ? prefixMatch[0].length : 0);
+
+    let targetTime = new Date();
+    let messageText = textToParse;
     
-    const newTask: Task = {
-      title,
-      description: '',
-      category,
-      status: 'todo',
-      date: Date.now(),
-    };
-    
-    const id = await db.tasks.add(newTask);
-    return {
-      action: 'task',
-      data: { ...newTask, id },
-      feedback: `Added "${title}" to your ${category} tasks.`
-    };
-  }
+    // Normalize string: handles '948 pm' -> '9:48 pm' and spaces
+    let normalizedText = textToParse.replace(/(\d{1,2})(\d{2})\s*(am|pm)/i, '$1:$2 $3');
+    normalizedText = normalizedText.replace(/(\d+)\.(\d+)/g, '$1:$2');
 
-  // 2. Reminder Parser: "remind me to [action] at [time] [day]"
-  // Simplified for this demo: handles "at 3pm tomorrow" or "at 9pm"
-  const reminderRegex = /remind me to\s+(.+?)\s+at\s+(\d+)(am|pm)?(?:\s+(tomorrow|today))?/i;
-  const reminderMatch = text.match(reminderRegex);
-  if (reminderMatch) {
-    const action = reminderMatch[1].trim();
-    let hour = parseInt(reminderMatch[2]);
-    const ampm = reminderMatch[3]?.toLowerCase();
-    const day = reminderMatch[4]?.toLowerCase() || 'today';
+    let baseDate = new Date();
+    let isEveningOrTonight = false;
 
-    if (ampm === 'pm' && hour < 12) hour += 12;
-    if (ampm === 'am' && hour === 12) hour = 0;
-
-    const targetDate = new Date();
-    if (day === 'tomorrow') {
-      targetDate.setDate(targetDate.getDate() + 1);
+    if (/tomorrow/i.test(normalizedText)) {
+      baseDate = startOfTomorrow();
+      normalizedText = normalizedText.replace(/tomorrow/i, '').trim();
+    } else if (/today/i.test(normalizedText)) {
+      normalizedText = normalizedText.replace(/today/i, '').trim();
     }
-    targetDate.setHours(hour, 0, 0, 0);
-
-    // Schedule notification if permitted
-    if (Notification.permission === 'granted') {
-      const delay = targetDate.getTime() - Date.now();
-      if (delay > 0) {
-        setTimeout(() => {
-          new Notification('Jemmah Reminder', {
-            body: action,
-            icon: '/favicon.ico'
-          });
-        }, delay);
-      }
+    
+    if (/tonight/i.test(normalizedText) || /this evening/i.test(normalizedText)) {
+      isEveningOrTonight = true;
+      normalizedText = normalizedText.replace(/tonight|this evening/i, '').trim();
     }
 
+    // Strict regex catching time representations
+    const timeRegex = /(\d{1,2}):(\d{2})\s*(am|pm)?/i;
+    const timeMatch = normalizedText.match(timeRegex);
+
+    if (timeMatch) {
+      let hours = parseInt(timeMatch[1], 10);
+      let minutes = parseInt(timeMatch[2], 10);
+      const ampm = timeMatch[3]?.toLowerCase();
+
+      if (ampm === 'pm' && hours < 12) hours += 12;
+      if (ampm === 'am' && hours === 12) hours = 0;
+
+      targetTime = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate(), hours, minutes, 0, 0);
+      messageText = normalizedText.replace(timeMatch[0], '').trim();
+    } else if (isEveningOrTonight) {
+      targetTime = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate(), 20, 0, 0, 0);
+      messageText = normalizedText;
+    }
+
+    if (targetTime < new Date() && !/tomorrow/i.test(input)) {
+      targetTime = new Date(targetTime.getTime() + 24 * 60 * 60 * 1000);
+    }
+
+    messageText = messageText.replace(/^(to|at|for)\s+/i, '').trim();
+
+    const formattedTime = targetTime.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
+    
+    const dayLabel = targetTime.getDate() === new Date().getDate() ? 'today' : 'tomorrow';
+
     return {
-      action: 'reminder',
-      data: { action, time: targetDate.getTime() },
-      feedback: `Got it. I'll remind you to "${action}" at ${format(targetDate, 'h:mm a MMM d')}.`
+      type: 'reminder',
+      payload: { text: messageText, time: targetTime },
+      confirmationMessage: `I'll remind you to "${messageText}" at ${formattedTime} ${dayLabel}.`
     };
   }
 
-  // 3. Search: "/search [query]"
-  if (input.startsWith('/search ')) {
-    const query = input.replace('/search ', '').trim();
-    return {
-      action: 'search',
-      data: query,
-      feedback: `Searching for "${query}" across your data...`
-    };
+  if (lowerInput.startsWith('add task:') || lowerInput.startsWith('task:')) {
+    const taskText = cleanInput.replace(/^(add task:|task:)/i, '').trim();
+    return { type: 'task', payload: { title: taskText }, confirmationMessage: `Successfully added task: "${taskText}"` };
   }
 
-  // 4. Default: Conversational Note
-  return {
-    action: 'message',
-    feedback: "I've noted that down for you locally."
-  };
+  if (lowerInput.startsWith('note:')) {
+    const noteText = cleanInput.replace(/^note:/i, '').trim();
+    return { type: 'note', payload: { content: noteText }, confirmationMessage: `Saved to local notes.` };
+  }
+
+  if (lowerInput.startsWith('/search ')) {
+    const queryText = cleanInput.substring(8).trim();
+    return { type: 'search', payload: { query: queryText }, confirmationMessage: `Searching local index for "${queryText}"...` };
+  }
+
+  return { type: 'unknown', payload: { text: cleanInput }, confirmationMessage: '' };
 }
