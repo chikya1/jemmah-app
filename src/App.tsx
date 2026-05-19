@@ -1,89 +1,95 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
 import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import ChatInterface from './components/ChatInterface';
 import TaskManager from './components/TaskManager';
-import FileVault from './components/FileVault';
-import SearchOverlay from './components/SearchOverlay';
-import { Search } from 'lucide-react';
+import { parseCommand } from './lib/CommandParser';
 
-type AppMode = 'chat' | 'tasks' | 'vault';
+export interface Message {
+  id: string;
+  text: string;
+  sender: 'user' | 'bot';
+  timestamp: Date;
+}
 
-export default function App() {
-  const [activeMode, setActiveMode] = useState<AppMode>('chat');
-  const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
-
-  // Request notifications permission on mount
-  useEffect(() => {
-    if ('Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission();
+function App() {
+  const [currentView, setCurrentView] = useState('chat');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      id: '1',
+      text: "Hello! I'm Jemmah, your private personal assistant. How can I assist you with your operations today?",
+      sender: 'bot',
+      timestamp: new Date()
     }
-  }, []);
+  ]);
 
-  // Shortcut for search
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault();
-        setIsSearchOpen(true);
-      }
+  const handleSendMessage = (text: string) => {
+    const userMsg: Message = {
+      id: Date.now().toString(),
+      text,
+      sender: 'user',
+      timestamp: new Date()
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+    setMessages(prev => [...prev, userMsg]);
 
-  const handleNavigate = (mode: AppMode, id?: string | number) => {
-    setActiveMode(mode);
-    if (mode === 'chat' && id) {
-      setActiveThreadId(id.toString());
-    }
-    setIsSearchOpen(false);
+    setTimeout(() => {
+      const parsed = parseCommand(text);
+      let replyText = "I'm processing that information for you.";
+      
+      if (parsed.type !== 'unknown') {
+        replyText = parsed.confirmationMessage;
+      }
+
+      setMessages(prev => [...prev, {
+        id: (Date.now() + 1).toString(),
+        text: replyText,
+        sender: 'bot',
+        timestamp: new Date()
+      }]);
+    }, 600);
   };
 
-  const currentThreadId = activeThreadId || 'default-thread';
-
   return (
-    <div className="flex h-screen w-full bg-[#E4E3E0] text-[#141414] font-sans overflow-hidden">
-      <Sidebar
-        activeMode={activeMode}
-        setActiveMode={setActiveMode}
-        activeThreadId={activeThreadId}
-        setActiveThreadId={setActiveThreadId}
-        isCollapsed={isSidebarCollapsed}
-        setIsCollapsed={setIsSidebarCollapsed}
+    <div className="flex h-screen w-screen bg-[#050505] overflow-hidden font-sans antialiased text-[#F5F0EB]">
+      {/* Dynamic Responsive Sidebar */}
+      <Sidebar 
+        isOpen={isSidebarOpen} 
+        setIsOpen={setIsSidebarOpen} 
+        currentView={currentView} 
+        setCurrentView={setCurrentView} 
       />
 
-      <main className="flex-1 relative flex flex-col h-full">
-        {/* Universal Search Trigger (Floating) */}
-        {!isSearchOpen && (
+      {/* Main Panel Workspace */}
+      <div className="flex-1 flex flex-col min-w-0 h-full relative">
+        {/* Top Floating Mobile Header */}
+        <header className="h-14 md:hidden flex items-center px-4 bg-[#0d0d0d] border-b border-[#2a2a2a] justify-between w-full z-40">
           <button 
-            onClick={() => setIsSearchOpen(true)}
-            className="absolute top-4 right-4 z-10 p-3 bg-white/80 backdrop-blur shadow-lg rounded-2xl border border-[#141414]/5 hover:bg-[#141414] hover:text-[#E4E3E0] transition-all group"
+            onClick={() => setIsSidebarOpen(true)}
+            className="p-2 text-xl text-[#9A8F8A] hover:text-[#F5F0EB] focus:outline-none"
+            aria-label="Open navigation menu"
           >
-            <div className="flex items-center gap-3">
-              <Search size={18} />
-              <span className="text-xs font-bold uppercase tracking-tight hidden md:inline">Quick Search</span>
-              <kbd className="hidden md:inline-flex h-5 items-center px-1.5 rounded border border-current opacity-40 text-[10px]">⌘K</kbd>
-            </div>
+            ☰
           </button>
-        )}
+          <span className="text-md font-semibold tracking-wide text-[#7B1F4B]">Jemmah</span>
+          <div className="w-8" />
+        </header>
 
-        {activeMode === 'chat' && <ChatInterface threadId={currentThreadId} />}
-        {activeMode === 'tasks' && <TaskManager />}
-        {activeMode === 'vault' && <FileVault />}
-      </main>
-
-      <SearchOverlay 
-        isOpen={isSearchOpen} 
-        onClose={() => setIsSearchOpen(false)} 
-        onNavigate={handleNavigate}
-      />
+        {/* Dynamic Display Panels */}
+        <main className="flex-1 overflow-y-auto relative w-full h-full">
+          {currentView === 'chat' && (
+            <ChatInterface messages={messages} onSendMessage={handleSendMessage} />
+          )}
+          {currentView === 'tasks' && <TaskManager />}
+          {currentView === 'notes' && (
+            <div className="p-6 max-w-4xl mx-auto">
+              <h2 className="text-xl font-bold mb-4 text-[#7B1F4B]">Local Vault Notes</h2>
+              <p className="text-[#9A8F8A] text-sm">Your secure encrypted operational data workspace module.</p>
+            </div>
+          )}
+        </main>
+      </div>
     </div>
   );
 }
+
+export default App;
