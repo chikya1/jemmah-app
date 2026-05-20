@@ -141,26 +141,27 @@ export default function ChatInterface({ threadId }: ChatInterfaceProps) {
       attachmentIds.push(vaultId as number);
     }
 
-    await db.messages.add({
-      threadId,
-      timestamp: Date.now(),
-      sender: 'user',
-      text: currentInput,
-      attachmentIds
-    });
-
-    const thread = await db.threads.get(threadId);
-    if (!thread) {
-      await db.threads.add({
-        id: threadId,
-        title: currentInput.slice(0, 30) || 'New Conversation',
-        updatedAt: Date.now()
+    // Only save user message if not a search
+    if (response.action !== 'search') {
+      await db.messages.add({
+        threadId,
+        timestamp: Date.now(),
+        sender: 'user',
+        text: currentInput,
+        attachmentIds
       });
-    } else {
-      await db.threads.update(threadId, { updatedAt: Date.now() });
-    }
 
-    const response = await parseCommand(currentInput);
+      const thread = await db.threads.get(threadId);
+      if (!thread) {
+        await db.threads.add({
+          id: threadId,
+          title: currentInput.slice(0, 30) || 'New Conversation',
+          updatedAt: Date.now()
+        });
+      } else {
+        await db.threads.update(threadId, { updatedAt: Date.now() });
+      }
+    }
 
     if (response.action === 'search' && response.data) {
       await performSearch(response.data);
