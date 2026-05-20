@@ -37,9 +37,9 @@ function parseTime(text: string): Date | null {
     if (t <= now) t.setDate(t.getDate() + 1);
     return t;
   }
-  const rm = s.match(/in\s+(\d+)\s+min/);
+  const rm = s.match(/in\s+(\d+)\s*(m\b|min|mins|minutes)/);
   if (rm) return new Date(now.getTime() + parseInt(rm[1]) * 60000);
-  const rh = s.match(/in\s+(\d+)\s+hour/);
+  const rh = s.match(/in\s+(\d+)\s*(h\b|hr|hrs|hours?)/);
   if (rh) return new Date(now.getTime() + parseInt(rh[1]) * 3600000);
   // v2
   return null;
