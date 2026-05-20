@@ -28,6 +28,13 @@ export default function App() {
       <div className={`fixed md:relative z-40 h-full w-64 bg-[#0d0d0d] border-r border-[#2a2a2a] transform transition-transform duration-300 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
         <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} currentView={currentView} setCurrentView={(v) => { setCurrentView(v); setIsSidebarOpen(false); }} />
       </div>
+      {!isSidebarOpen && (
+        <div
+          className="fixed left-0 top-0 w-6 h-full z-50 md:hidden"
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+        />
+      )}
       <main className="flex-1 h-full flex flex-col overflow-hidden" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
         <header className="flex items-center gap-3 px-4 py-3 border-b border-[#e5e5e5] bg-white shrink-0">
           <button className="md:hidden p-2 rounded-lg bg-[#f5f5f5] border border-[#e5e5e5] text-[#0d0d0d]" onClick={() => setIsSidebarOpen(!isSidebarOpen)}>☰</button>

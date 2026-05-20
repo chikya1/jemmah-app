@@ -12,7 +12,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, currentView
   const menuItems = [
     { id: 'chat', label: 'Assistant', icon: '💬' },
     { id: 'tasks', label: 'Tasks', icon: '✅' },
-    { id: 'notes', label: 'Notes', icon: '📝' },
+    { id: 'vault', label: 'Collections', icon: '🗂️' },
   ];
 
   const sidebarContent = (

@@ -208,7 +208,7 @@ export default function ChatInterface({ threadId, onNavigate }: ChatInterfacePro
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#0d0d0d] relative overflow-hidden">
+    <div className="flex flex-col h-full bg-white relative overflow-hidden">
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-0">
         <img src="/jemmah-logo.png" alt="" className="w-48 h-48 object-contain opacity-[0.03]" />
       </div>
@@ -252,8 +252,8 @@ export default function ChatInterface({ threadId, onNavigate }: ChatInterfacePro
         ))}
       </div>
 
-      <div className="z-20 bg-[#0d0d0d] border-t border-[#2a2a2a]" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-        <div className="flex gap-2 px-3 pt-3 pb-1 overflow-x-auto">
+      <div className="z-20 bg-white border-t border-[#e5e5e5]" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+        <div className="flex gap-2 px-3 pt-3 pb-1 overflow-x-auto bg-white">
           {CHIPS.map((chip) => (
             <button
               key={chip.label}
