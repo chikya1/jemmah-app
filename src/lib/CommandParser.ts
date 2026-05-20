@@ -102,6 +102,8 @@ function extractTask(text: string): string {
 
 export async function parseCommand(text: string): Promise<CommandResult> {
   const input = text.toLowerCase().trim();
+
+  // Task
   const taskMatch = text.match(/(?:add task|new task):\s*(.+?)(?:\s+to\s+(personal|work))?$/i);
   if (taskMatch) {
     const title = taskMatch[1].trim();
@@ -110,6 +112,8 @@ export async function parseCommand(text: string): Promise<CommandResult> {
     const id = await db.tasks.add(newTask);
     return { action: 'task', data: { ...newTask, id }, feedback: `Added "${title}" to your ${category} tasks.` };
   }
+
+  // Reminder
   if (input.includes('remind') || input.includes('reminder')) {
     const targetTime = parseTime(text);
     const task = extractTask(text);
@@ -120,17 +124,37 @@ export async function parseCommand(text: string): Promise<CommandResult> {
           setTimeout(() => { new Notification('Jemmah Reminder', { body: task, icon: '/jemmah-logo.png' }); }, delay);
         }
       }
-      return { action: 'reminder', data: { task, time: targetTime.getTime() }, feedback: `Got it. I\'ll remind you to "${task}" at ${format(targetTime, 'h:mm a, MMM d')}.` };
+      return { action: 'reminder', data: { task, time: targetTime.getTime() }, feedback: `Got it. I'll remind you to "${task}" at ${format(targetTime, 'h:mm a, MMM d')}.` };
     }
-    return { action: 'reminder', feedback: `Couldn\'t find a time. Try: "Remind me to call Rohan at 6:30pm"` };
+    return { action: 'reminder', feedback: `Couldn't find a time. Try: "Remind me to call Rohan at 6:30pm"` };
   }
-  if (input.startsWith('/search ')) {
-    const query = input.replace('/search ', '').trim();
+
+  // Search
+  if (input.startsWith('/search ') || input.startsWith('find ') || input.startsWith('search ')) {
+    const query = text.replace(/^(\/search |find |search )/i, '').trim();
     return { action: 'search', data: query, feedback: `Searching for "${query}"...` };
   }
-  if (input.startsWith('note:') || input.startsWith('note ')) {
-    const note = text.replace(/^note:?\s*/i, '').trim();
-    return { action: 'note', feedback: `Note saved: "${note}"` };
+
+  // Show all notes
+  if (input.includes('show all notes') || input.includes('all notes') || input === 'show all') {
+    return { action: 'search', data: '__all_notes__', feedback: 'Showing all your notes.' };
   }
-  return { action: 'message', feedback: "Got it. I\'ve noted that down locally." };
+
+  // URL detection
+  const urlMatch = text.match(/(?:https?:\/\/|www\.)[^\s]+/);
+  if (urlMatch) {
+    const note = await saveNote(text, 'url');
+    return { action: 'note', data: note, feedback: `Link saved. Tags: ${note.tags.join(', ') || 'none'}.` };
+  }
+
+  // Note commands
+  if (input.startsWith('note:') || input.startsWith('note ') || input.startsWith('remember ') || input.startsWith('save ')) {
+    const content = text.replace(/^(note:?|remember|save)\s*/i, '').trim();
+    const note = await saveNote(content, detectNoteType(content));
+    return { action: 'note', data: note, feedback: `Saved. Tags: ${note.tags.join(', ') || 'none'}.` };
+  }
+
+  // Default - save everything as a note
+  const note = await saveNote(text, detectNoteType(text));
+  return { action: 'note', data: note, feedback: `Got it. Saved to your notes.` };
 }
