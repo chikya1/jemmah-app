@@ -258,7 +258,7 @@ export default function ChatInterface({ threadId, onNavigate }: ChatInterfacePro
             <button
               key={chip.label}
               onClick={() => setInput(chip.fill)}
-              className="shrink-0 text-xs px-3 py-1.5 rounded-full bg-[#1a1a1a] text-[#7B1F4B] border border-[#2a2a2a] whitespace-nowrap font-medium"
+              className="shrink-0 text-xs px-3 py-1.5 rounded-full bg-[#1a1a1a] text-white border border-[#2a2a2a] whitespace-nowrap font-medium"
             >
               {chip.label}
             </button>
