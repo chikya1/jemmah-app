@@ -47,11 +47,22 @@ export default function FileVault() {
   return (
     <div className="flex flex-col h-full bg-white">
       {selectedImage && (
-        <div className="fixed inset-0 z-50 bg-black flex items-center justify-center" onClick={() => setSelectedImage(null)}>
-          <button className="absolute top-4 right-4 p-2 bg-white/20 rounded-full text-white">
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'black', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          onClick={() => setSelectedImage(null)}
+        >
+          <button
+            style={{ position: 'absolute', top: 16, right: 16, padding: 8, background: 'rgba(255,255,255,0.2)', borderRadius: '50%', color: 'white', border: 'none', cursor: 'pointer' }}
+            onClick={(e) => { e.stopPropagation(); setSelectedImage(null); }}
+          >
             <X size={24} />
           </button>
-          <img src={selectedImage} alt="Full view" className="max-w-full max-h-full object-contain" />
+          <img
+            src={selectedImage}
+            alt="Full view"
+            style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+            onClick={(e) => e.stopPropagation()}
+          />
         </div>
       )}
 
@@ -99,8 +110,8 @@ export default function FileVault() {
                     <img
                       src={item.dataUrlOrBlob as string}
                       alt={item.name}
-                      className="w-full h-full object-cover cursor-pointer"
-                      onClick={() => setSelectedImage(item.dataUrlOrBlob as string)}
+                      style={{ width: "100%", height: "100%", objectFit: "cover", cursor: "pointer" }}
+                      onClick={(e) => { e.stopPropagation(); setSelectedImage(item.dataUrlOrBlob as string); }}
                     />
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-2">
                       <p className="text-white text-xs truncate">{item.name}</p>
