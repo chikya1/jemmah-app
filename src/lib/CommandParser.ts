@@ -41,6 +41,7 @@ function parseTime(text: string): Date | null {
   if (rm) return new Date(now.getTime() + parseInt(rm[1]) * 60000);
   const rh = s.match(/in\s+(\d+)\s+hour/);
   if (rh) return new Date(now.getTime() + parseInt(rh[1]) * 3600000);
+  // v2
   return null;
 }
 
