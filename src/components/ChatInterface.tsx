@@ -7,6 +7,7 @@ import { Send, Paperclip, Mic, MicOff, X, FileText, File } from 'lucide-react';
 
 interface ChatInterfaceProps {
   threadId: string;
+  onNavigate?: (view: string) => void;
 }
 
 const CHIPS = [
@@ -16,7 +17,7 @@ const CHIPS = [
   { label: '🔍 Search', fill: '/search ' },
 ];
 
-export default function ChatInterface({ threadId }: ChatInterfaceProps) {
+export default function ChatInterface({ threadId, onNavigate }: ChatInterfaceProps) {
   const [input, setInput] = useState('');
   const [attachments, setAttachments] = useState<File[]>([]);
   const [isListening, setIsListening] = useState(false);
@@ -91,7 +92,7 @@ export default function ChatInterface({ threadId }: ChatInterfaceProps) {
         const cat = t.category ? ` [${t.category}]` : '';
         taskText += `☐ ${t.title}${cat}${due}\n`;
       });
-      taskText += '\nOpen Task Board to check off tasks.';
+      taskText += '\n[TAP_TO_OPEN_TASKS]';
       await db.messages.add({ threadId, timestamp: Date.now() + 10, sender: 'assistant', text: taskText.trim() });
       return;
     }
@@ -227,7 +228,19 @@ export default function ChatInterface({ threadId }: ChatInterfaceProps) {
                 ? 'bg-[#7B1F4B] text-[#F5F0EB]'
                 : 'bg-[#1a1a1a] text-[#F5F0EB] border-l-2 border-[#7B1F4B]'
             }`}>
-              {msg.text && <p>{msg.text}</p>}
+              {msg.text && msg.text.includes('[TAP_TO_OPEN_TASKS]') ? (
+                <div>
+                  <p className="whitespace-pre-line">{msg.text.replace('[TAP_TO_OPEN_TASKS]', '').trim()}</p>
+                  <button
+                    onClick={() => onNavigate && onNavigate('tasks')}
+                    className="mt-2 w-full py-2 rounded-xl bg-[#7B1F4B] text-white text-xs font-medium"
+                  >
+                    Open Task Board →
+                  </button>
+                </div>
+              ) : (
+                <p className="whitespace-pre-line">{msg.text}</p>
+              )}
               {msg.attachmentIds && msg.attachmentIds.length > 0 && (
                 <AttachmentsList ids={msg.attachmentIds} />
               )}

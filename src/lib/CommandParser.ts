@@ -129,7 +129,7 @@ export async function parseCommand(text: string): Promise<CommandResult> {
   }
 
   // Add task
-  const taskMatch = text.match(/(?:add task|new task|task:)\s*(.+?)(?:\s+(?:to|for)\s+(personal|work))?$/i);
+  const taskMatch = text.match(/(?:add task|new task|task):?\s+(.+?)(?:\s+(?:to|for)\s+(personal|work))?$/i);
   if (taskMatch) {
     const title = taskMatch[1].trim();
     const category = (taskMatch[2]?.toLowerCase() || 'personal') as 'personal' | 'work';

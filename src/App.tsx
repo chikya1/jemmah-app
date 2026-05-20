@@ -10,7 +10,7 @@ export default function App() {
   const threadId = 'default-thread';
 
   return (
-    <div className="flex h-screen w-screen bg-[#0d0d0d] text-[#F5F0EB] font-sans overflow-hidden">
+    <div className="flex h-screen w-screen bg-[#F5F0EB] text-[#0d0d0d] font-sans overflow-hidden">
       {isSidebarOpen && (
         <div className="fixed inset-0 bg-black/60 z-30 md:hidden" onClick={() => setIsSidebarOpen(false)} />
       )}
@@ -24,7 +24,7 @@ export default function App() {
           <h1 className="text-base font-semibold text-[#F5F0EB]">Jemmah</h1>
         </header>
         <div className="flex-1 overflow-hidden">
-          {currentView === 'chat' && <ChatInterface threadId={threadId} />}
+          {currentView === 'chat' && <ChatInterface threadId={threadId} onNavigate={(view) => setCurrentView(view)} />}
           {currentView === 'tasks' && <TaskManager />}
           {currentView === 'vault' && <FileVault />}
         </div>
