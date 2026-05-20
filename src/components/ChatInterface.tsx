@@ -71,13 +71,14 @@ export default function ChatInterface({ threadId }: ChatInterfaceProps) {
     const q = query.toLowerCase();
     const isAll = q === '__all_notes__';
 
+    const allNotes = await db.notes.toArray();
     const notes = isAll
-      ? await db.notes.orderBy('timestamp').reverse().toArray()
-      : await db.notes.filter(n =>
+      ? allNotes.sort((a,b) => b.timestamp - a.timestamp)
+      : allNotes.filter(n =>
           n.content.toLowerCase().includes(q) ||
           n.title.toLowerCase().includes(q) ||
-          n.tags.some(tag => tag.includes(q))
-        ).toArray();
+          (n.tags && n.tags.some((tag: string) => tag.includes(q)))
+        );
 
     const messages: any[] = [];
     const total = notes.length;
