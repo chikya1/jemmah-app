@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../lib/LocalDB';
 import { Search, Image as ImageIcon, FileText, Link, File, Trash2, X, ExternalLink } from 'lucide-react';
@@ -46,13 +47,13 @@ export default function FileVault() {
 
   return (
     <div className="flex flex-col h-full bg-white">
-      {selectedImage && (
+      {selectedImage && createPortal(
         <div
           style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'black', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           onClick={() => setSelectedImage(null)}
         >
           <button
-            style={{ position: 'absolute', top: 16, right: 16, padding: 8, background: 'rgba(255,255,255,0.2)', borderRadius: '50%', color: 'white', border: 'none', cursor: 'pointer' }}
+            style={{ position: 'absolute', top: 16, right: 16, padding: 8, background: 'rgba(255,255,255,0.2)', borderRadius: '50%', color: 'white', border: 'none', cursor: 'pointer', zIndex: 10000 }}
             onClick={(e) => { e.stopPropagation(); setSelectedImage(null); }}
           >
             <X size={24} />
@@ -60,10 +61,11 @@ export default function FileVault() {
           <img
             src={selectedImage}
             alt="Full view"
-            style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+            style={{ maxWidth: '100vw', maxHeight: '100vh', objectFit: 'contain' }}
             onClick={(e) => e.stopPropagation()}
           />
-        </div>
+        </div>,
+        document.body
       )}
 
       <div className="px-4 pt-4 pb-2 border-b border-[#e5e5e5]">
