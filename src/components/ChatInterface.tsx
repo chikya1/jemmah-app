@@ -140,8 +140,8 @@ export default function ChatInterface({ threadId }: ChatInterfaceProps) {
     // Parse command first
     const response = await parseCommand(currentInput);
 
-    // Only save user message if not a search or note (notes saved to notes table)
-    if (response.action !== 'search' && response.action !== 'note') {
+    // Only save user message if not a search
+    if (response.action !== 'search') {
       await db.messages.add({
         threadId,
         timestamp: Date.now(),
