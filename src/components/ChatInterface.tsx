@@ -67,6 +67,57 @@ export default function ChatInterface({ threadId }: ChatInterfaceProps) {
     setAttachments(prev => prev.filter((_, i) => i !== idx));
   };
 
+  const performSearch = async (query: string) => {
+    const q = query.toLowerCase();
+    const isAll = q === '__all_notes__';
+
+    const notes = isAll
+      ? await db.notes.orderBy('timestamp').reverse().toArray()
+      : await db.notes.filter(n =>
+          n.content.toLowerCase().includes(q) ||
+          n.title.toLowerCase().includes(q) ||
+          n.tags.some(tag => tag.includes(q))
+        ).toArray();
+
+    const messages = isAll ? [] : await db.messages
+      .filter(m => m.text.toLowerCase().includes(q) && m.sender === 'user')
+      .limit(5).toArray();
+
+    const total = notes.length + messages.length;
+
+    if (total === 0) {
+      await db.messages.add({
+        threadId,
+        timestamp: Date.now() + 10,
+        sender: 'assistant',
+        text: `Nothing found for "${query}". Try different words.`
+      });
+      return;
+    }
+
+    // Build result text
+    let resultText = `Found ${total} result${total > 1 ? 's' : ''} for "${isAll ? 'all notes' : query}":\n\n`;
+
+    notes.forEach((n, i) => {
+      const icon = n.type === 'url' ? '🔗' : n.type === 'credential' ? '🔒' : n.type === 'idea' ? '💡' : '📝';
+      const content = n.isSensitive ? '••••• (tap to reveal in notes)' : n.content;
+      resultText += `${icon} ${content}\n`;
+      if (n.tags.length) resultText += `   Tags: ${n.tags.map(t => '#'+t).join(' ')}\n`;
+      resultText += `   ${new Date(n.timestamp).toLocaleDateString()}\n\n`;
+    });
+
+    messages.forEach(m => {
+      resultText += `💬 ${m.text}\n   ${new Date(m.timestamp).toLocaleDateString()}\n\n`;
+    });
+
+    await db.messages.add({
+      threadId,
+      timestamp: Date.now() + 10,
+      sender: 'assistant',
+      text: resultText.trim()
+    });
+  };
+
   const handleSend = async () => {
     if (!input.trim() && attachments.length === 0) return;
     const currentInput = input.trim();
@@ -110,12 +161,17 @@ export default function ChatInterface({ threadId }: ChatInterfaceProps) {
     }
 
     const response = await parseCommand(currentInput);
-    await db.messages.add({
-      threadId,
-      timestamp: Date.now() + 10,
-      sender: 'assistant',
-      text: response.feedback,
-    });
+
+    if (response.action === 'search' && response.data) {
+      await performSearch(response.data);
+    } else {
+      await db.messages.add({
+        threadId,
+        timestamp: Date.now() + 10,
+        sender: 'assistant',
+        text: response.feedback,
+      });
+    }
   };
 
   const handleKey = (e: React.KeyboardEvent) => {
