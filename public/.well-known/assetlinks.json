@@ -1,0 +1,10 @@
+[{
+  "relation": ["delegate_permission/common.http.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.skylabsindia.jemmah.twa",
+    "sha256_cert_fingerprints": [
+      "40:1F:32:05:FA:5B:6C:ED:A9:FF:96:8A:B9:74:F2:DD:8D:71:75:F1:20:73:5D:24:C6:15:99:3A:97:6B:13:89"
+    ]
+  }
+}]

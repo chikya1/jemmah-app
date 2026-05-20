@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import Sidebar from './components/Sidebar';
-import { ChatInterface } from './components/ChatInterface';
+import ChatInterface from './components/ChatInterface';
 import TaskManager from './components/TaskManager';
 
 export default function App() {
