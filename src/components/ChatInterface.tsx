@@ -79,11 +79,8 @@ export default function ChatInterface({ threadId }: ChatInterfaceProps) {
           n.tags.some(tag => tag.includes(q))
         ).toArray();
 
-    const messages = isAll ? [] : await db.messages
-      .filter(m => m.text.toLowerCase().includes(q) && m.sender === 'user')
-      .limit(5).toArray();
-
-    const total = notes.length + messages.length;
+    const messages: any[] = [];
+    const total = notes.length;
 
     if (total === 0) {
       await db.messages.add({
@@ -106,9 +103,7 @@ export default function ChatInterface({ threadId }: ChatInterfaceProps) {
       resultText += `   ${new Date(n.timestamp).toLocaleDateString()}\n\n`;
     });
 
-    messages.forEach(m => {
-      resultText += `💬 ${m.text}\n   ${new Date(m.timestamp).toLocaleDateString()}\n\n`;
-    });
+
 
     await db.messages.add({
       threadId,
@@ -144,8 +139,8 @@ export default function ChatInterface({ threadId }: ChatInterfaceProps) {
     // Parse command first
     const response = await parseCommand(currentInput);
 
-    // Only save user message if not a search
-    if (response.action !== 'search') {
+    // Only save user message if not a search or note (notes saved to notes table)
+    if (response.action !== 'search' && response.action !== 'note') {
       await db.messages.add({
         threadId,
         timestamp: Date.now(),
