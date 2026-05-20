@@ -94,7 +94,8 @@ function extractTask(text: string): string {
     .replace(/\b\d{3}\s*(am|pm)\b/gi, '')
     .replace(/(\d{1,2})[.:]( \d{2})\s*(am|pm)?/gi, '')
     .replace(/\b\d{1,2}\s*(am|pm)\b/gi, '')
-    .replace(/\b(at|by|before|around)\s*$/gi, '')
+    .replace(/\b(at|by|before|around|today|tonight)\s*$/gi, '')
+    .replace(/\s+at\s*$/gi, '')
     .replace(/\b(today|tomorrow|tonight)\b/gi, '')
     .replace(/\s{2,}/g, ' ')
     .trim();

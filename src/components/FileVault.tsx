@@ -1,144 +1,196 @@
 import React, { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db, type VaultItem } from '../lib/LocalDB';
-import { Search, Grid, List as ListIcon, FileText, Image as ImageIcon, File, Download, Trash2, Clock } from 'lucide-react';
+import { db } from '../lib/LocalDB';
+import { Search, Image as ImageIcon, FileText, Link, File, Trash2, X, ExternalLink } from 'lucide-react';
 import { format } from 'date-fns';
-import { cn } from '../lib/utils';
+
+type Tab = 'images' | 'documents' | 'links';
 
 export default function FileVault() {
+  const [tab, setTab] = useState<Tab>('images');
   const [query, setQuery] = useState('');
-  const [view, setView] = useState<'grid' | 'list'>('grid');
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
-  const items = useLiveQuery(() => {
-    if (!query) return db.vault.orderBy('timestamp').reverse().toArray();
-    return db.vault
-      .filter(item => item.name.toLowerCase().includes(query.toLowerCase()))
-      .toArray();
-  }, [query]);
+  const vaultItems = useLiveQuery(() => db.vault.orderBy('timestamp').reverse().toArray(), []);
+  const notes = useLiveQuery(() => db.notes.orderBy('timestamp').reverse().toArray(), []);
 
-  const deleteItem = async (id: number) => {
-    if (confirm('Delete this file from vault?')) {
-      await db.vault.delete(id);
-    }
+  const images = vaultItems?.filter(i => i.type === 'image') || [];
+  const documents = vaultItems?.filter(i => i.type !== 'image') || [];
+  const links = notes?.filter(n => n.type === 'url') || [];
+
+  const filteredImages = query
+    ? images.filter(i => i.name.toLowerCase().includes(query.toLowerCase()))
+    : images;
+
+  const filteredDocs = query
+    ? documents.filter(d => d.name.toLowerCase().includes(query.toLowerCase()))
+    : documents;
+
+  const filteredLinks = query
+    ? links.filter(l => l.content.toLowerCase().includes(query.toLowerCase()) || l.tags.some(t => t.includes(query.toLowerCase())))
+    : links;
+
+  const deleteVaultItem = async (id: number) => {
+    await db.vault.delete(id);
   };
 
-  const downloadFile = (item: VaultItem) => {
-    const link = document.createElement('a');
-    link.href = item.dataUrlOrBlob as string;
-    link.download = item.name;
-    link.click();
+  const deleteNote = async (id: number) => {
+    await db.notes.delete(id);
   };
+
+  const tabs = [
+    { id: 'images' as Tab, label: 'Images', icon: ImageIcon, count: images.length },
+    { id: 'documents' as Tab, label: 'Docs', icon: FileText, count: documents.length },
+    { id: 'links' as Tab, label: 'Links', icon: Link, count: links.length },
+  ];
 
   return (
-    <div className="p-8 h-full bg-[#f5f5f0] overflow-y-auto flex flex-col">
-      <div className="max-w-6xl mx-auto w-full space-y-8 flex-1 flex flex-col">
-        <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 shrink-0">
-          <div>
-            <span className="text-[10px] uppercase tracking-widest font-bold opacity-40">Digital Storage</span>
-            <h1 className="font-serif italic text-4xl mt-1">File Vault</h1>
-          </div>
+    <div className="flex flex-col h-full bg-white">
+      {selectedImage && (
+        <div className="fixed inset-0 z-50 bg-black flex items-center justify-center" onClick={() => setSelectedImage(null)}>
+          <button className="absolute top-4 right-4 p-2 bg-white/20 rounded-full text-white">
+            <X size={24} />
+          </button>
+          <img src={selectedImage} alt="Full view" className="max-w-full max-h-full object-contain" />
+        </div>
+      )}
 
-          <div className="flex items-center gap-3">
-             <div className="relative">
-               <Search className="absolute left-3 top-1/2 -translate-y-1/2 opacity-30" size={16} />
-               <input 
-                type="text" 
-                placeholder="Search files..."
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                className="pl-10 pr-4 py-2 bg-white rounded-xl border border-[#141414]/5 text-sm w-64 focus:ring-2 ring-[#141414]/5 transition-all"
-               />
-             </div>
-             <div className="flex bg-white rounded-xl p-1 shadow-sm border border-[#141414]/5">
-              <button 
-                onClick={() => setView('grid')}
-                className={cn("p-1.5 rounded-lg transition-colors", view === 'grid' ? "bg-[#141414] text-white" : "hover:bg-[#141414]/5")}
-              >
-                <Grid size={18} />
-              </button>
-              <button 
-                onClick={() => setView('list')}
-                className={cn("p-1.5 rounded-lg transition-colors", view === 'list' ? "bg-[#141414] text-white" : "hover:bg-[#141414]/5")}
-              >
-                <ListIcon size={18} />
-              </button>
-             </div>
-          </div>
-        </header>
+      <div className="px-4 pt-4 pb-2 border-b border-[#e5e5e5]">
+        <div className="flex items-center gap-2 bg-[#f5f5f5] rounded-xl px-3 py-2 mb-3">
+          <Search size={16} className="text-[#9A8F8A]" />
+          <input
+            type="text"
+            placeholder="Search..."
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            className="flex-1 bg-transparent text-sm text-[#0d0d0d] placeholder-[#9A8F8A] outline-none"
+          />
+          {query && <button onClick={() => setQuery('')}><X size={14} className="text-[#9A8F8A]" /></button>}
+        </div>
 
-        {view === 'grid' ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-6 gap-6">
-            {items?.map((item) => (
-              <div 
-                key={item.id} 
-                className="group bg-white rounded-3xl p-3 shadow-lg hover:shadow-xl transition-all border border-[#141414]/5 relative flex flex-col aspect-square"
-              >
-                <div className="flex-1 rounded-2xl bg-[#E4E3E0]/30 overflow-hidden mb-3 relative flex items-center justify-center">
-                  {item.type === 'image' ? (
-                    <img src={item.dataUrlOrBlob as string} alt={item.name} className="w-full h-full object-cover" />
-                  ) : item.type === 'pdf' ? (
-                    <FileText size={40} className="text-[#141414]/20" />
-                  ) : (
-                    <File size={40} className="text-[#141414]/20" />
-                  )}
-                  
-                  <div className="absolute inset-0 bg-[#141414]/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                    <button onClick={() => downloadFile(item)} className="p-2 bg-white rounded-full hover:scale-110 transition-transform"><Download size={18} /></button>
-                    <button onClick={() => deleteItem(item.id!)} className="p-2 bg-red-500 text-white rounded-full hover:scale-110 transition-transform"><Trash2 size={18} /></button>
+        <div className="flex gap-2">
+          {tabs.map(t => (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-medium border transition-colors ${
+                tab === t.id
+                  ? 'bg-[#7B1F4B] border-[#7B1F4B] text-white'
+                  : 'bg-white border-[#e5e5e5] text-[#9A8F8A]'
+              }`}
+            >
+              <t.icon size={14} />
+              {t.label}
+              {t.count > 0 && <span className="opacity-70">({t.count})</span>}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-4">
+        {tab === 'images' && (
+          <>
+            {filteredImages.length === 0 ? (
+              <Empty text="No images yet. Send an image in chat to save it here." />
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                {filteredImages.map(item => (
+                  <div key={item.id} className="relative group rounded-2xl overflow-hidden border border-[#e5e5e5] aspect-square bg-[#f5f5f5]">
+                    <img
+                      src={item.dataUrlOrBlob as string}
+                      alt={item.name}
+                      className="w-full h-full object-cover cursor-pointer"
+                      onClick={() => setSelectedImage(item.dataUrlOrBlob as string)}
+                    />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-2">
+                      <p className="text-white text-xs truncate">{item.name}</p>
+                      <p className="text-white/60 text-[10px]">{format(item.timestamp, 'MMM d')}</p>
+                    </div>
+                    <button
+                      onClick={() => deleteVaultItem(item.id!)}
+                      className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <Trash2 size={12} />
+                    </button>
                   </div>
-                </div>
-                <div className="px-1">
-                   <p className="text-[11px] font-bold truncate">{item.name}</p>
-                   <p className="text-[10px] opacity-40 uppercase tracking-tighter mt-0.5">{format(item.timestamp, 'MMM d, yyyy')}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-[#141414]/5">
-            <table className="w-full text-left">
-              <thead className="bg-[#141414] text-[#E4E3E0] text-[10px] uppercase font-bold tracking-widest">
-                <tr>
-                  <th className="px-6 py-4">Name</th>
-                  <th className="px-6 py-4">Type</th>
-                  <th className="px-6 py-4">Added</th>
-                  <th className="px-6 py-4 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#141414]/5">
-                {items?.map((item) => (
-                  <tr key={item.id} className="hover:bg-[#f5f5f0] transition-colors group">
-                    <td className="px-6 py-4 flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-[#E4E3E0]/30 flex items-center justify-center overflow-hidden">
-                        {item.type === 'image' ? <ImageIcon size={14} /> : <File size={14} />}
-                      </div>
-                      <span className="text-sm font-medium">{item.name}</span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="text-[10px] font-bold uppercase bg-[#141414]/5 px-2 py-1 rounded-md">{item.type}</span>
-                    </td>
-                    <td className="px-6 py-4 text-xs opacity-40">{format(item.timestamp, 'PP')}</td>
-                    <td className="px-6 py-4 text-right">
-                       <div className="flex justify-end gap-2">
-                        <button onClick={() => downloadFile(item)} className="p-2 hover:bg-[#141414]/5 rounded-lg transition-colors"><Download size={16} /></button>
-                        <button onClick={() => deleteItem(item.id!)} className="p-2 hover:bg-red-500 hover:text-white rounded-lg transition-colors"><Trash2 size={16} /></button>
-                       </div>
-                    </td>
-                  </tr>
                 ))}
-              </tbody>
-            </table>
-          </div>
+              </div>
+            )}
+          </>
         )}
 
-        {(!items || items.length === 0) && (
-          <div className="flex-1 flex items-center justify-center py-20">
-             <div className="text-center opacity-30 italic font-serif max-w-xs">
-                Your vault is empty. Upload files in the chat view to store them here permanently and securely.
-             </div>
-          </div>
+        {tab === 'documents' && (
+          <>
+            {filteredDocs.length === 0 ? (
+              <Empty text="No documents yet. Send a file in chat to save it here." />
+            ) : (
+              <div className="space-y-2">
+                {filteredDocs.map(item => (
+                  <div key={item.id} className="flex items-center gap-3 p-3 bg-[#f5f5f5] rounded-2xl border border-[#e5e5e5]">
+                    <div className="w-10 h-10 rounded-xl bg-[#7B1F4B]/10 flex items-center justify-center shrink-0">
+                      {item.type === 'pdf' ? <FileText size={20} className="text-[#7B1F4B]" /> : <File size={20} className="text-[#7B1F4B]" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-[#0d0d0d] truncate">{item.name}</p>
+                      <p className="text-[10px] text-[#9A8F8A]">{item.type.toUpperCase()} · {format(item.timestamp, 'MMM d, yyyy')}</p>
+                    </div>
+                    <button onClick={() => deleteVaultItem(item.id!)} className="p-2 text-[#9A8F8A] hover:text-red-500">
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+
+        {tab === 'links' && (
+          <>
+            {filteredLinks.length === 0 ? (
+              <Empty text="No links yet. Paste a URL in chat to save it here." />
+            ) : (
+              <div className="space-y-2">
+                {filteredLinks.map(item => (
+                  <div key={item.id} className="p-3 bg-[#f5f5f5] rounded-2xl border border-[#e5e5e5]">
+                    <div className="flex items-start gap-2">
+                      <div className="w-8 h-8 rounded-xl bg-[#7B1F4B]/10 flex items-center justify-center shrink-0 mt-0.5">
+                        <Link size={16} className="text-[#7B1F4B]" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-[#0d0d0d] break-all">{item.content}</p>
+                        {item.tags.length > 0 && (
+                          <div className="flex gap-1 mt-1 flex-wrap">
+                            {item.tags.map(tag => (
+                              <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded-full bg-white border border-[#e5e5e5] text-[#9A8F8A]">#{tag}</span>
+                            ))}
+                          </div>
+                        )}
+                        <p className="text-[10px] text-[#9A8F8A] mt-1">{format(item.timestamp, 'MMM d, yyyy')}</p>
+                      </div>
+                      <div className="flex gap-1 shrink-0">
+                        <a href={item.content} target="_blank" rel="noreferrer" className="p-1.5 text-[#7B1F4B]">
+                          <ExternalLink size={14} />
+                        </a>
+                        <button onClick={() => deleteNote(item.id!)} className="p-1.5 text-[#9A8F8A] hover:text-red-500">
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
         )}
       </div>
+    </div>
+  );
+}
+
+function Empty({ text }: { text: string }) {
+  return (
+    <div className="flex items-center justify-center h-48 text-center text-sm text-[#9A8F8A] px-8">
+      {text}
     </div>
   );
 }
