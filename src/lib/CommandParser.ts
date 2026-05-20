@@ -1,5 +1,45 @@
-import { db, type Task } from './LocalDB';
 import { format } from 'date-fns';
+
+import { db, type Task, type Note } from './LocalDB';
+
+function detectNoteType(content: string): Note['type'] {
+  const lower = content.toLowerCase();
+  if (content.match(/https?:\/\//)) return 'url';
+  if (lower.match(/password|login|username|credential|pin|otp|secret/)) return 'credential';
+  if (lower.match(/idea|concept|thought|what if|imagine|maybe we/)) return 'idea';
+  return 'text';
+}
+
+function extractTags(content: string): string[] {
+  const stopwords = new Set(['a','an','the','is','it','in','on','at','to','for','of','and','or','but','i','my','me','this','that','with','just','some','from','was','are','be','as','by','we','if','so','do','its','has','had','not','but','she','he','they','them','his','her','our','your']);
+  const words = content.toLowerCase()
+    .replace(/https?:\/\/[^\s]+/g, '')
+    .split(/[\s,.\/]+/)
+    .map(w => w.replace(/[^a-z0-9]/g, ''))
+    .filter(w => w.length > 3 && !stopwords.has(w));
+  return [...new Set(words)].slice(0, 5);
+}
+
+function extractTitle(content: string): string {
+  const urlMatch = content.match(/https?:\/\/([^/\s]+)/);
+  if (urlMatch) return urlMatch[1];
+  return content.slice(0, 40).replace(/\n/g, ' ').trim();
+}
+
+async function saveNote(content: string, type: Note['type']): Promise<Note> {
+  const isSensitive = /password|login|username|credential|pin|otp|secret/i.test(content);
+  const note: Note = {
+    content,
+    title: extractTitle(content),
+    type,
+    tags: extractTags(content),
+    isSensitive,
+    timestamp: Date.now()
+  };
+  const id = await db.notes.add(note);
+  return { ...note, id: id as number };
+}
+
 
 export interface CommandResult {
   action: 'message' | 'task' | 'reminder' | 'search' | 'note';
