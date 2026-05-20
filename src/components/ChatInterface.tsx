@@ -141,6 +141,9 @@ export default function ChatInterface({ threadId }: ChatInterfaceProps) {
       attachmentIds.push(vaultId as number);
     }
 
+    // Parse command first
+    const response = await parseCommand(currentInput);
+
     // Only save user message if not a search
     if (response.action !== 'search') {
       await db.messages.add({
