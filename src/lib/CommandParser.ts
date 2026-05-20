@@ -104,13 +104,38 @@ export async function parseCommand(text: string): Promise<CommandResult> {
   const input = text.toLowerCase().trim();
 
   // Task
-  const taskMatch = text.match(/(?:add task|new task):\s*(.+?)(?:\s+to\s+(personal|work))?$/i);
+  // Show tasks commands
+  if (input.includes('show my tasks') || input.includes('show tasks') || input === 'tasks' || input.includes('my tasks')) {
+    return { action: 'search', data: '__all_tasks__', feedback: 'Showing your tasks.' };
+  }
+  if (input.includes('tasks for today') || input.includes("today's tasks")) {
+    return { action: 'search', data: '__today_tasks__', feedback: "Showing today's tasks." };
+  }
+  if (input.includes('overdue tasks') || input.includes('pending tasks')) {
+    return { action: 'search', data: '__overdue_tasks__', feedback: 'Showing overdue tasks.' };
+  }
+
+  // Mark task done
+  const markDoneMatch = text.match(/(?:mark|complete|done|finished?)\s+(.+?)\s+(?:as\s+)?(?:done|complete|finished)/i);
+  if (markDoneMatch) {
+    const titleQuery = markDoneMatch[1].toLowerCase().trim();
+    const allTasks = await db.tasks.toArray();
+    const found = allTasks.find(t => t.title.toLowerCase().includes(titleQuery));
+    if (found) {
+      await db.tasks.update(found.id!, { status: 'done' });
+      return { action: 'task', feedback: `Done. Marked "${found.title}" as complete.` };
+    }
+    return { action: 'task', feedback: `Couldn't find a task matching "${titleQuery}".` };
+  }
+
+  // Add task
+  const taskMatch = text.match(/(?:add task|new task|task:)\s*(.+?)(?:\s+(?:to|for)\s+(personal|work))?$/i);
   if (taskMatch) {
     const title = taskMatch[1].trim();
     const category = (taskMatch[2]?.toLowerCase() || 'personal') as 'personal' | 'work';
     const newTask: Task = { title, description: '', category, status: 'todo', date: Date.now() };
     const id = await db.tasks.add(newTask);
-    return { action: 'task', data: { ...newTask, id }, feedback: `Added "${title}" to your ${category} tasks.` };
+    return { action: 'task', data: { ...newTask, id }, feedback: `Task added: "${title}". Open Task Board to set a due date.` };
   }
 
   // Reminder

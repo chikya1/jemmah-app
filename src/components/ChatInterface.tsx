@@ -71,6 +71,31 @@ export default function ChatInterface({ threadId }: ChatInterfaceProps) {
     const q = query.toLowerCase();
     const isAll = q === '__all_notes__';
 
+    // Handle task queries
+    if (q === '__all_tasks__' || q === '__today_tasks__' || q === '__overdue_tasks__') {
+      const allTasks = await db.tasks.toArray();
+      const now = new Date();
+      const tasks = q === '__all_tasks__'
+        ? allTasks.filter(t => t.status !== 'done')
+        : q === '__today_tasks__'
+        ? allTasks.filter(t => t.status !== 'done' && t.dueDate && new Date(t.dueDate).toDateString() === now.toDateString())
+        : allTasks.filter(t => t.status !== 'done' && t.dueDate && new Date(t.dueDate) < now);
+
+      if (tasks.length === 0) {
+        await db.messages.add({ threadId, timestamp: Date.now() + 10, sender: 'assistant', text: 'No tasks found. Open Task Board to add some.' });
+        return;
+      }
+      let taskText = `You have ${tasks.length} task${tasks.length > 1 ? 's' : ''}:\n\n`;
+      tasks.forEach(t => {
+        const due = t.dueDate ? ` — due ${new Date(t.dueDate).toLocaleDateString()}` : '';
+        const cat = t.category ? ` [${t.category}]` : '';
+        taskText += `☐ ${t.title}${cat}${due}\n`;
+      });
+      taskText += '\nOpen Task Board to check off tasks.';
+      await db.messages.add({ threadId, timestamp: Date.now() + 10, sender: 'assistant', text: taskText.trim() });
+      return;
+    }
+
     const allNotes = await db.notes.toArray();
     const notes = isAll
       ? allNotes.sort((a,b) => b.timestamp - a.timestamp)
