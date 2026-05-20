@@ -8,6 +8,17 @@ export default function App() {
   const [currentView, setCurrentView] = useState('chat');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const threadId = 'default-thread';
+  const touchStartX = React.useRef(0);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const diff = e.changedTouches[0].clientX - touchStartX.current;
+    if (diff > 60 && touchStartX.current < 40) setIsSidebarOpen(true);
+    if (diff < -60) setIsSidebarOpen(false);
+  };
 
   return (
     <div className="flex h-screen w-screen bg-white text-[#0d0d0d] font-sans overflow-hidden">
