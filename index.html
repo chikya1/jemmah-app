@@ -1,16 +1,533 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Jemmah: Private Personal Assistant</title>
-  <link rel="manifest" href="/manifest.json">
-<link rel="manifest" href="/manifest.json">
-<link rel="icon" type="image/png" href="/icon.png">
-</head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
-</html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Jemmah — Your Private Personal Assistant</title>
+  <meta name="description" content="Jemmah is an offline-first AI personal assistant for Android. No cloud. No tracking. Fully private." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+    :root {
+      --black: #0d0d0d;
+      --off-black: #111111;
+      --gold: #C9A84C;
+      --orange: #E8833A;
+      --white: #f5f2ee;
+      --muted: #9A8F8A;
+      --border: #1e1e1e;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--black);
+      color: var(--white);
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 300;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* NAV */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 40px;
+      background: rgba(13,13,13,0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+    .nav-logo img { width: 32px; height: 32px; object-fit: cover; border-radius: 50%; }
+    .nav-logo span { font-family: 'EB Garamond', serif; font-size: 20px; color: var(--white); letter-spacing: 0.02em; }
+    .nav-links { display: flex; gap: 28px; align-items: center; }
+    .nav-links a { color: var(--muted); text-decoration: none; font-size: 13px; font-weight: 400; letter-spacing: 0.04em; transition: color 0.2s; }
+    .nav-links a:hover { color: var(--white); }
+    .nav-download {
+      background: var(--orange); color: #fff !important;
+      padding: 8px 18px; border-radius: 8px;
+      font-weight: 500 !important; font-size: 13px !important;
+      transition: opacity 0.2s !important;
+    }
+    .nav-download:hover { opacity: 0.85; }
+
+    /* HERO */
+    .hero {
+      min-height: 100vh;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      text-align: center;
+      padding: 120px 24px 80px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+      background: radial-gradient(ellipse 60% 50% at 50% 40%, rgba(232,131,58,0.07) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero-logo {
+      width: 160px; height: 160px; object-fit: cover;
+      margin-bottom: 32px;
+      border-radius: 50%;
+      box-shadow: 0 0 60px rgba(232,131,58,0.3), 0 0 0 3px rgba(232,131,58,0.15);
+      animation: float 4s ease-in-out infinite;
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+    .hero-tag {
+      font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase;
+      color: var(--orange); font-weight: 500; margin-bottom: 16px;
+    }
+    .hero h1 {
+      font-family: 'EB Garamond', serif;
+      font-size: clamp(42px, 8vw, 80px);
+      font-weight: 400; line-height: 1.1;
+      color: var(--white);
+      margin-bottom: 8px;
+    }
+    .hero h1 em { font-style: italic; color: var(--gold); }
+    .hero-sub {
+      font-size: clamp(14px, 2vw, 17px);
+      color: var(--muted); max-width: 460px;
+      line-height: 1.7; margin: 16px auto 40px;
+    }
+    .hero-actions { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--orange); color: #fff;
+      padding: 14px 28px; border-radius: 10px;
+      font-size: 14px; font-weight: 500; text-decoration: none;
+      transition: opacity 0.2s, transform 0.2s;
+    }
+    .btn-primary:hover { opacity: 0.88; transform: translateY(-1px); }
+    .btn-secondary {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: transparent; color: var(--white);
+      padding: 14px 28px; border-radius: 10px;
+      font-size: 14px; font-weight: 400; text-decoration: none;
+      border: 1px solid var(--border);
+      transition: border-color 0.2s, transform 0.2s;
+    }
+    .btn-secondary:hover { border-color: #444; transform: translateY(-1px); }
+    .hero-note {
+      margin-top: 20px; font-size: 12px; color: #555;
+      letter-spacing: 0.03em;
+    }
+
+    /* FEATURES */
+    .section { padding: 80px 24px; max-width: 900px; margin: 0 auto; }
+    .section-label {
+      font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase;
+      color: var(--orange); font-weight: 500; margin-bottom: 40px;
+      text-align: center;
+    }
+    .features-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+    }
+    .feature-card {
+      background: #111; border: 1px solid var(--border);
+      border-radius: 14px; padding: 24px;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+    .feature-card:hover { border-color: #333; transform: translateY(-2px); }
+    .feature-icon { font-size: 28px; margin-bottom: 14px; }
+    .feature-card h3 { font-size: 14px; font-weight: 600; color: var(--white); margin-bottom: 8px; }
+    .feature-card p { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+    /* PRIVACY BADGE */
+    .privacy-strip {
+      background: #111; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+      padding: 40px 24px;
+    }
+    .privacy-strip-inner {
+      max-width: 900px; margin: 0 auto;
+      display: flex; gap: 32px; flex-wrap: wrap; justify-content: center;
+    }
+    .privacy-item { display: flex; align-items: center; gap: 10px; }
+    .privacy-item span:first-child { font-size: 20px; }
+    .privacy-item p { font-size: 13px; color: var(--muted); }
+    .privacy-item strong { color: var(--white); display: block; font-size: 13px; font-weight: 500; }
+
+    /* DIVIDER */
+    .divider { border: none; border-top: 1px solid var(--border); margin: 0; }
+
+    /* FOOTER */
+    footer {
+      padding: 32px 40px;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 16px;
+      border-top: 1px solid var(--border);
+    }
+    footer p { font-size: 12px; color: #444; }
+    footer a { color: #555; text-decoration: none; font-size: 12px; }
+    footer a:hover { color: var(--muted); }
+    .footer-links { display: flex; gap: 20px; }
+
+    /* PRIVACY PAGE */
+    #privacy-page { display: none; }
+    .privacy-hero {
+      padding: 120px 24px 60px;
+      text-align: center;
+      border-bottom: 1px solid var(--border);
+    }
+    .privacy-hero h1 {
+      font-family: 'EB Garamond', serif;
+      font-size: clamp(32px, 5vw, 52px);
+      font-weight: 400; color: var(--white);
+      margin-bottom: 12px;
+    }
+    .privacy-hero p { font-size: 14px; color: var(--muted); }
+    .privacy-body {
+      max-width: 760px; margin: 0 auto;
+      padding: 60px 24px 80px;
+    }
+    .privacy-body h2 {
+      font-family: 'EB Garamond', serif;
+      font-size: 26px; font-weight: 600;
+      color: var(--white); margin: 48px 0 16px;
+      padding-top: 8px;
+      border-top: 1px solid var(--border);
+    }
+    .privacy-body h2:first-child { margin-top: 0; border-top: none; }
+    .privacy-body h3 {
+      font-size: 14px; font-weight: 600;
+      color: var(--white); margin: 28px 0 10px;
+      letter-spacing: 0.02em;
+    }
+    .privacy-body p {
+      font-size: 14px; color: var(--muted);
+      line-height: 1.8; margin-bottom: 14px;
+    }
+    .privacy-body ul {
+      padding-left: 20px; margin-bottom: 14px;
+    }
+    .privacy-body ul li {
+      font-size: 14px; color: var(--muted);
+      line-height: 1.8; margin-bottom: 6px;
+    }
+    .warning-box {
+      background: rgba(232,131,58,0.07);
+      border: 1px solid rgba(232,131,58,0.3);
+      border-radius: 12px; padding: 20px 24px;
+      margin: 24px 0;
+    }
+    .warning-box p {
+      color: #e8a06a !important;
+      font-size: 13px !important;
+      margin-bottom: 8px;
+    }
+    .warning-box p:last-child { margin-bottom: 0; }
+    .warning-box strong { color: var(--orange); }
+    .back-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      color: var(--orange); font-size: 13px; text-decoration: none;
+      margin-bottom: 40px; cursor: pointer;
+      background: none; border: none; padding: 0;
+      font-family: 'DM Sans', sans-serif;
+    }
+    .back-btn:hover { opacity: 0.8; }
+
+    /* MOBILE */
+    @media (max-width: 600px) {
+      nav { padding: 14px 20px; }
+      .nav-links { gap: 16px; }
+      footer { padding: 24px 20px; }
+      .hero-logo { width: 90px; height: 90px; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="#" onclick="showHome()">
+    <img src="/jemmah-logo.png" alt="Jemmah" />
+    <span>Jemmah</span>
+  </a>
+  <div class="nav-links">
+    <a href="#features">Features</a>
+    <a href="#" onclick="showPrivacy(); return false;">Privacy</a>
+    <a href="https://skylabsindia.com" target="_blank">SKYLabs</a>
+    <a class="nav-download" href="https://drive.google.com/uc?export=download&id=1AfCsGMi_D9A-pljYKhDhJrlCuq4OZFeV">↓ Download</a>
+  </div>
+</nav>
+
+<!-- HOME PAGE -->
+<div id="home-page">
+
+  <section class="hero">
+    <img class="hero-logo" src="/jemmah-logo.png" alt="Jemmah Logo" />
+    <p class="hero-tag">Android · Offline · Private</p>
+    <h1>Your assistant.<br><em>Entirely yours.</em></h1>
+    <p class="hero-sub">Jemmah runs fully on your device. No cloud, no tracking, no accounts. An AI personal assistant that respects your privacy by design.</p>
+    <div class="hero-actions">
+      <a class="btn-primary" href="https://drive.google.com/uc?export=download&id=1AfCsGMi_D9A-pljYKhDhJrlCuq4OZFeV">↓ Download APK</a>
+      <a class="btn-secondary" href="#" onclick="showPrivacy(); return false;">Terms & Privacy →</a>
+    </div>
+    <p class="hero-note">Android only · Free · No account required · Coming soon to Google Play</p>
+  </section>
+
+  <div class="privacy-strip">
+    <div class="privacy-strip-inner">
+      <div class="privacy-item">
+        <span>🔒</span>
+        <div><strong>Zero Data Collection</strong><p>Nothing leaves your device, ever.</p></div>
+      </div>
+      <div class="privacy-item">
+        <span>📴</span>
+        <div><strong>100% Offline</strong><p>Works without internet after setup.</p></div>
+      </div>
+      <div class="privacy-item">
+        <span>🤖</span>
+        <div><strong>Local AI</strong><p>LLM runs on your own hardware.</p></div>
+      </div>
+      <div class="privacy-item">
+        <span>🗄️</span>
+        <div><strong>On-Device Storage</strong><p>SQLite, sandboxed, yours alone.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <section class="section" id="features">
+    <p class="section-label">What Jemmah does</p>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">🧠</div>
+        <h3>AI Chat Assistant</h3>
+        <p>Run local LLMs on your device. Gemma, Phi-3, Llama, Qwen — your choice, fully offline.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📝</div>
+        <h3>Notes</h3>
+        <p>Capture thoughts, links, and text instantly. Stored locally, searchable, always private.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">✅</div>
+        <h3>Tasks & Reminders</h3>
+        <p>Local task management with calendar integration, recurring events, and local notifications.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔐</div>
+        <h3>Password Vault</h3>
+        <p>Store credentials and account details in a sandboxed SQLite vault. No cloud sync.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🖼️</div>
+        <h3>Media Vault</h3>
+        <p>Import and store images and documents privately within the app's isolated storage.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔒</div>
+        <h3>App Lock</h3>
+        <p>4-digit PIN and fingerprint lock. Settings can be locked separately. Zero server involvement.</p>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider" />
+
+  <footer>
+    <p>© 2026 SKYLabs India Private Limited. Built by Tejas Patil.</p>
+    <div class="footer-links">
+      <a href="#" onclick="showPrivacy(); return false;">Terms & Privacy</a>
+      <a href="https://skylabsindia.com" target="_blank">skylabsindia.com</a>
+      <a href="mailto:chikyasdomain@gmail.com">Contact</a>
+    </div>
+  </footer>
+
+</div>
+
+<!-- PRIVACY PAGE -->
+<div id="privacy-page">
+
+  <section class="privacy-hero">
+    <h1>Terms, Privacy & Permissions</h1>
+    <p>Last Updated: June 6, 2026 · Jemmah by SKYLabs India Private Limited</p>
+  </section>
+
+  <div class="privacy-body">
+    <button class="back-btn" onclick="showHome()">← Back to Jemmah</button>
+
+    <h2>Part 1 — Terms of Use</h2>
+
+    <h3>1. Acceptance of Terms</h3>
+    <p>By downloading, installing, or using Jemmah, you agree to be bound by these Terms. If you do not agree, uninstall the app immediately. These Terms constitute a legally binding agreement between you and Tejas Patil / SKYLabs India Private Limited.</p>
+
+    <h3>2. Eligibility</h3>
+    <p>Jemmah is intended solely for users aged 18 years and above. By using this app, you confirm you meet this requirement.</p>
+
+    <h3>3. What Jemmah Is</h3>
+    <p>Jemmah is an offline-first, privacy-focused personal assistant for Android. It runs entirely on your device. Features include:</p>
+    <ul>
+      <li>AI-Powered Chat Assistant (local LLM, no cloud)</li>
+      <li>Notes, Tasks, Reminders, Calendar</li>
+      <li>Personal Accounts Ledger</li>
+      <li>Password Vault</li>
+      <li>Media Vault (images and documents)</li>
+      <li>Text-to-Speech Output (voice responses only; microphone input is not active in this version)</li>
+      <li>App Lock (PIN and Fingerprint)</li>
+      <li>Local Notifications</li>
+    </ul>
+    <p>Development Disclosure: Jemmah was built using AI tools including Gemini and Claude. The app does not connect to any AI cloud service during normal use.</p>
+
+    <h3>4. App Lock & Access Control</h3>
+    <p>Jemmah includes a fully local App Lock system:</p>
+    <ul>
+      <li><strong>4-Digit PIN Lock:</strong> A mandatory PIN required every time the app opens.</li>
+      <li><strong>Fingerprint Authentication:</strong> Use your device fingerprint as primary unlock, with PIN as fallback.</li>
+      <li><strong>Settings Lock:</strong> A separate PIN gate protecting the Settings page.</li>
+    </ul>
+    <p>All PIN values and lock preferences are stored locally on your device only. No server, no cloud, no recovery mechanism exists.</p>
+
+    <div class="warning-box">
+      <p><strong>⚠️ CRITICAL WARNING — NO PIN RESETS & PERMANENT LOCKOUT</strong></p>
+      <p>WE DO NOT SUPPORT PIN RESETS UNDER ANY CIRCUMSTANCES.</p>
+      <p>If you forget your PIN and your fingerprint stops working (due to OS upgrade, hardware failure, device reset, or biometric re-enrollment), you will be permanently and irreversibly locked out of the app and all data inside it.</p>
+      <p>Tejas Patil and SKYLabs India Private Limited hold absolutely no liability for loss of app access or loss of data resulting from a locked state. It is entirely your responsibility to remember your PIN and maintain valid biometric enrollment on your device. PROCEED WITH CAUTION.</p>
+    </div>
+
+    <h3>5. No Warranty</h3>
+    <p>Jemmah is provided "AS-IS" and "AS-AVAILABLE." We make no guarantees regarding reliability, accuracy, or fitness for any purpose. AI outputs may be inaccurate, incomplete, or inappropriate and are not a substitute for professional legal, medical, or financial advice. You use the app entirely at your own risk.</p>
+
+    <h3>6. Limitation of Liability</h3>
+    <p>To the maximum extent permitted by Indian law, Tejas Patil and SKYLabs India Private Limited shall not be liable for any direct, indirect, incidental, or consequential damages arising from your use of Jemmah, including data loss, device malfunction, or financial loss.</p>
+
+    <h3>7. Data Loss Disclaimer</h3>
+    <p>All data is stored locally on your device. Uninstalling Jemmah permanently and irreversibly deletes all your notes, tasks, passwords, files, and history. There is no backup or recovery mechanism. We strongly recommend maintaining your own backups.</p>
+
+    <h3>8. Password & Financial Data</h3>
+    <p>The password vault and accounts ledger store data in a local SQLite database protected by Android's standard app sandbox isolation. No additional encryption is applied beyond what Android provides natively. You are solely responsible for the data you store.</p>
+
+    <h3>9. AI Model Licensing</h3>
+    <p>Jemmah supports third-party AI models in GGUF format. The app does not bundle any model. You must download and import models independently. By using any model, you agree to its license:</p>
+    <ul>
+      <li>Gemma 3 by Google DeepMind — Google Gemma Terms of Use</li>
+      <li>Phi-3 Mini by Microsoft — MIT License</li>
+      <li>Llama 3.2 by Meta — Meta Llama Community License</li>
+      <li>Qwen 2.5 by Alibaba Cloud — Apache License 2.0</li>
+    </ul>
+    <p>SKYLabs India Private Limited is not responsible for your compliance with third-party model licenses.</p>
+
+    <h3>10. Prohibited Uses</h3>
+    <p>You must not use Jemmah to store credentials belonging to others without consent, generate content for harassment or illegal activity, or decompile/reverse-engineer the application.</p>
+
+    <h3>11. Intellectual Property</h3>
+    <p>The Jemmah name, logo, and user interface are the exclusive intellectual property of Tejas Patil. You are granted a limited, personal, non-transferable license to use the app on your Android device.</p>
+
+    <h3>12. Governing Law</h3>
+    <p>These Terms are governed by the laws of India. All disputes shall be subject to the exclusive jurisdiction of the courts of Bengaluru, Karnataka, India.</p>
+
+    <h2>Part 2 — Privacy Policy</h2>
+
+    <h3>1. Zero Data Collection</h3>
+    <p>Jemmah collects absolutely no personal data. We have no backend servers, no cloud databases, no analytics, no crash reporting, and no advertising SDKs. You are never required to create an account or provide any personal information.</p>
+    <p>Because no personal data is ever collected or received by us, SKYLabs India Private Limited is not a "Data Fiduciary" under India's Digital Personal Data Protection (DPDP) Act, 2023.</p>
+
+    <h3>2. Local Data Storage</h3>
+    <p>All data you enter — notes, tasks, calendar events, passwords, account entries, chat history, media files — is stored exclusively in a private SQLite database and AsyncStorage on your device. This data is inaccessible to other apps and cannot be read externally unless your device has been rooted or compromised.</p>
+    <p>If you activate the App Lock feature, your chosen 4-digit PIN and biometric preference are processed entirely on-device and stored locally in isolated system registers. No network entity can access or query this security setup.</p>
+
+    <h3>3. AI Processing</h3>
+    <p>All AI inference happens entirely on your device's CPU/GPU. Your messages, prompts, and chat history are never sent to any external server — not to us, not to Google, Meta, Microsoft, or any other party.</p>
+
+    <h3>4. Internet Usage</h3>
+    <p>Jemmah uses the internet only for downloading AI model files from HuggingFace (user-initiated) and opening links you have saved in your default browser (user-initiated). No background data transmission occurs.</p>
+
+    <h3>5. Permissions</h3>
+    <ul>
+      <li><strong>RECORD_AUDIO</strong> — Declared in manifest but NOT currently active. Microphone input is disabled in this version. No audio is recorded or processed.</li>
+      <li><strong>POST_NOTIFICATIONS</strong> — Local reminders and calendar alerts only. No push servers used.</li>
+      <li><strong>READ/WRITE_EXTERNAL_STORAGE</strong> — For importing AI model files from your device storage (legacy Android compatibility).</li>
+      <li><strong>READ_MEDIA_IMAGES</strong> — For importing images into the private media vault.</li>
+      <li><strong>USE_BIOMETRIC / USE_FINGERPRINT</strong> — Local device fingerprint unlock only. No security tokens are transmitted anywhere.</li>
+      <li><strong>INTERNET</strong> — For model downloads and opening saved links in browser only.</li>
+      <li><strong>CAMERA</strong> — Reserved for future use. Not currently active.</li>
+    </ul>
+
+    <h3>6. Your Right to Deletion</h3>
+    <p>You have complete control over your data. To delete all Jemmah data: use "Delete All Chats" in Settings, go to Android Settings → Apps → Jemmah → Storage → Clear Data, or uninstall the app. All actions permanently and irreversibly delete all your data.</p>
+
+    <h3>7. Children's Privacy</h3>
+    <p>Jemmah is not intended for users under 18. We do not knowingly collect data from minors.</p>
+
+    <h3>8. Contact</h3>
+    <p>For questions: <a href="mailto:chikyasdomain@gmail.com" style="color: var(--orange);">chikyasdomain@gmail.com</a> · <a href="https://skylabsindia.com" style="color: var(--orange);">skylabsindia.com</a></p>
+
+    <h2>Part 3 — Google Play Data Safety</h2>
+
+    <p>Does your app collect or share any user data? <strong style="color:var(--white)">NO</strong></p>
+    <p>Is all user data encrypted in transit? <strong style="color:var(--white)">Not Applicable</strong> (no data is transmitted)</p>
+    <p>Do you provide a way for users to request data deletion? <strong style="color:var(--white)">YES</strong> — via Android Settings → Apps → Jemmah → Clear Data, or by uninstalling.</p>
+
+    <h2>Part 4 — Permissions Declaration</h2>
+
+    <h3>RECORD_AUDIO</h3>
+    <p>Declared in the app manifest but microphone input from the user is NOT active in this version. Jemmah does not record, process, or store any audio input. Retained for a future voice input feature.</p>
+
+    <h3>POST_NOTIFICATIONS</h3>
+    <p>Required for local reminders, task alerts, calendar events, birthdays, and anniversaries. No cloud push servers are used.</p>
+
+    <h3>READ_EXTERNAL_STORAGE / WRITE_EXTERNAL_STORAGE</h3>
+    <p>Required for legacy Android compatibility to allow importing AI model files from local storage.</p>
+
+    <h3>READ_MEDIA_IMAGES</h3>
+    <p>Required for modern Android to allow importing images into the private media vault.</p>
+
+    <h3>USE_BIOMETRIC / USE_FINGERPRINT</h3>
+    <p>Required to call the native device fingerprint API for local app unlock. No security tokens are transmitted anywhere.</p>
+
+    <h3>INTERNET</h3>
+    <p>Used solely for downloading AI model files from HuggingFace and opening user-saved links in the default browser. No background data transmission.</p>
+
+    <h3>CAMERA</h3>
+    <p>Reserved for future use. Not currently active in this version.</p>
+
+    <p style="margin-top: 40px; font-size: 12px; color: #444;">Security Guarantees: No permission operates silently in the background. No permission feeds advertising, analytics, or tracking systems. Every permission is triggered only by explicit user action.</p>
+
+    <button class="back-btn" onclick="showHome()" style="margin-top: 40px; margin-bottom: 0;">← Back to Jemmah</button>
+  </div>
+
+  <hr class="divider" />
+  <footer>
+    <p>© 2026 SKYLabs India Private Limited. Built by Tejas Patil.</p>
+    <div class="footer-links">
+      <a href="https://skylabsindia.com" target="_blank">skylabsindia.com</a>
+      <a href="mailto:chikyasdomain@gmail.com">Contact</a>
+    </div>
+  </footer>
+</div>
+
+<script>
+  function showHome() {
+    document.getElementById('home-page').style.display = 'block';
+    document.getElementById('privacy-page').style.display = 'none';
+    window.scrollTo(0, 0);
+    history.pushState({}, '', '/');
+  }
+
+  function showPrivacy() {
+    document.getElementById('home-page').style.display = 'none';
+    document.getElementById('privacy-page').style.display = 'block';
+    window.scrollTo(0, 0);
+    history.pushState({}, '', '/privacy');
+  }
+
+  // Handle direct URL access to /privacy
+  if (window.location.pathname === '/privacy') {
+    showPrivacy();
+  }
+
+  window.addEventListener('popstate', () => {
+    if (window.location.pathname === '/privacy') showPrivacy();
+    else showHome();
+  });
+</script>
+
+</body>
+</html>
